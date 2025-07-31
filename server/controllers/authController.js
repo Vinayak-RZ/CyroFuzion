@@ -1,10 +1,11 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import supabase from '../utils/supabaseClient.js';
+import { sendOtpToEmail } from '../utils/emailService.js';
 
 const SECRET = process.env.JWT_SECRET;
 const { hash, compare } = bcrypt;
-const { sign, verify } = jwt;
+const { sign } = jwt;
 
 // POST /signup
 const signup = async (req, res) => {
@@ -44,8 +45,8 @@ const signup = async (req, res) => {
   }
 };
 
-// POST /login
-const login = async (req, res) => {
+
+const sendOtpAfterPasswordCheck = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -66,12 +67,67 @@ const login = async (req, res) => {
     const match = await compare(password, user.password);
     if (!match) return res.status(401).json({ error: 'Invalid credentials' });
 
+    // Generate OTP and expiry (5 min)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+
+    // Save to DB
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ otp_code: otp, otp_expiry: expiry })
+      .eq('id', user.id);
+
+    if (updateError) throw updateError;
+
+    await sendOtpToEmail(email, otp); 
+
+    res.json({ message: 'OTP sent to email' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to send OTP' });
+  }
+};
+
+const verifyOtpAndLogin = async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ error: 'Email and OTP are required' });
+  }
+
+  try {
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, email, username, otp_code, otp_expiry')
+      .eq('email', email);
+
+    if (error) throw error;
+
+    const user = users[0];
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (user.otp_code !== otp) {
+      return res.status(401).json({ error: 'Invalid OTP' });
+    }
+
+    const now = new Date();
+    const expiry = new Date(user.otp_expiry);
+    if (now > expiry) {
+      return res.status(401).json({ error: 'OTP expired' });
+    }
+
+    // Clear OTP
+    await supabase
+      .from('users')
+      .update({ otp_code: null, otp_expiry: null })
+      .eq('id', user.id);
+
     const token = sign({ id: user.id }, SECRET, { expiresIn: '1d' });
 
     res.json({ user: { id: user.id, email: user.email, username: user.username }, token });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: 'OTP verification failed' });
   }
 };
 
@@ -99,4 +155,9 @@ const connectWallet = async (req, res) => {
   }
 };
 
-export default { signup, login, connectWallet };
+export default {
+  signup,
+  sendOtpAfterPasswordCheck,
+  verifyOtpAndLogin,
+  connectWallet,
+};
