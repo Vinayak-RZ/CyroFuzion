@@ -8,14 +8,14 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
---hello
+
 module Fusion.OnChain where
 
 import           Plutus.V2.Ledger.Api
 import           Plutus.V2.Ledger.Contexts
 import           PlutusTx                      (BuiltinData, compile, makeIsDataIndexed, makeLift)
 import qualified PlutusTx
-import           Prelude                       (Bool (..), Eq, (&&), ($), traceError, traceIfFalse, Show)
+import           Prelude                       (Bool (..), Eq, (&&), ($), traceError, traceIfFalse, Show, Integer, (>=))
 import           GHC.Generics                  (Generic)
 import           Data.Aeson                    (ToJSON, FromJSON)
 
@@ -25,15 +25,13 @@ import           Data.Aeson                    (ToJSON, FromJSON)
 
 data FusionDatum = FusionDatum
     { fdMaker         :: PubKeyHash
-    , fdTaker         :: PubKeyHash          
     , fdResolver      :: PubKeyHash
     , fdToken         :: AssetClass
     , fdAmount        :: Integer
     , fdHashlock      :: BuiltinByteString
-    , fdTimelockA     :: POSIXTime
-    , fdTimelockB     :: POSIXTime
-    , fdSafetyDeposit :: Integer             -- in lovelace
+    , fdSafetyDeposit :: Integer
     }
+
     deriving stock (Generic, Show)
     deriving anyclass (ToJSON, FromJSON)
 
@@ -49,6 +47,18 @@ PlutusTx.makeIsDataIndexed ''FusionRedeemer [('RevealSecret, 0), ('CancelOrder, 
 PlutusTx.makeLift ''FusionRedeemer
 
 ------------------------------------------------------------------------------------------
+-- Constants
+------------------------------------------------------------------------------------------
+
+{-# INLINABLE timelockA #-}
+timelockA :: POSIXTime
+timelockA = 20000
+
+{-# INLINABLE timelockB #-}
+timelockB :: POSIXTime
+timelockB = 10000
+
+------------------------------------------------------------------------------------------
 -- Main Validator Logic
 ------------------------------------------------------------------------------------------
 
@@ -56,17 +66,15 @@ PlutusTx.makeLift ''FusionRedeemer
 mkValidator :: FusionDatum -> FusionRedeemer -> ScriptContext -> Bool
 mkValidator datum redeemer ctx =
     case redeemer of
-
         RevealSecret secret ->
             traceIfFalse "Not signed by resolver" signedByResolver &&
             traceIfFalse "Secret does not match hashlock" validSecret &&
-       --     traceIfFalse "TimelockB not reached" timelockBReached &&
-        --    traceIfFalse "Locked ADA not paid to Taker" tokenPaidToTaker
+            traceIfFalse "TimelockB not reached" timelockBReached &&
 
         CancelOrder ->
             traceIfFalse "TimelockA not reached" timelockAReached &&
-            traceIfFalse "Safety deposit not paid to Resolver" safetyDepositReturned &&
-          --  traceIfFalse "Locked ADA not returned to Maker" tokenReturnedToMaker
+            traceIfFalse "Safety deposit not paid to resolver" safetyDepositReturned &&
+            traceIfFalse "Locked tokens not returned to maker" tokenReturnedToMaker
 
   where
     info :: TxInfo
@@ -84,27 +92,27 @@ mkValidator datum redeemer ctx =
              _                       -> traceError "Invalid time range"
 
     timelockAReached :: Bool
-    timelockAReached = now >= fdTimelockA datum
+    timelockAReached = now >= timelockA
 
     timelockBReached :: Bool
-    timelockBReached = now >= fdTimelockB datum
+    timelockBReached = now >= timelockB
 
     safetyDepositReturned :: Bool
     safetyDepositReturned =
-        let expectedValue = lovelaceValueOf (fdSafetyDeposit datum)
-        in paidTo (fdResolver datum) expectedValue
+        let expected = lovelaceValueOf (fdSafetyDeposit datum)
+        in paidTo (fdResolver datum) expected
 
     tokenReturnedToMaker :: Bool
     tokenReturnedToMaker =
         let expected = assetClassValue (fdToken datum) (fdAmount datum)
         in paidTo (fdMaker datum) expected
 
-    tokenPaidToTaker :: Bool
-    tokenPaidToTaker =
-        let expected = assetClassValue (fdToken datum) (fdAmount datum)
-        in paidTo (fdTaker datum) expected
+--    tokenPaidToTaker :: Bool
+--  tokenPaidToTaker =
+--      let expected = assetClassValue (fdToken datum) (fdAmount datum)
+--      in paidTo (fdTaker datum) expected
 
-    -- Reusable check
+    -- Reusable helper
     paidTo :: PubKeyHash -> Value -> Bool
     paidTo pkh expected =
         any (\o -> txOutAddress o == pubKeyHashAddress pkh && txOutValue o `geq` expected) (txInfoOutputs info)
