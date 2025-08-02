@@ -1,6 +1,5 @@
 {
   "name": "relayer",
-  "type": "module",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -11,13 +10,11 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@1inch/cross-chain-sdk": "^0.1.15-rc.0", 
     "dotenv": "^17.2.1",
-    "lucid-cardano": "^0.10.11",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
-    "web3": "^4.16.0",
-    "web3-providers-http": "^4.2.0"
+    "ethers": "^6.15.0",
+    "starknet": "^6.24.1",
+    "starknetkit": "^2.12.1",
+    "web3": "^4.16.0"
   },
   "devDependencies": {
     "@types/node": "^24.1.0"
