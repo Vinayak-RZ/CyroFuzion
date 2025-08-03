@@ -31,81 +31,67 @@ let initialized = false;
 
 async function pollEvents() {
     if (!initialized) {
-        await initDb();           // 🔹 Ensure DB is globally available
-        await initEscrowDb();     // 🔹 Can now safely use getDb()
+        await initDb();
+        await initEscrowDb();
         initialized = true;
     }
-    const currentBlock = await provider.getBlockNumber();
 
+    const currentBlock = await provider.getBlockNumber();
     if (lastBlock === 0) {
-        lastBlock = currentBlock - 1; // first time
+        lastBlock = currentBlock - 1;
     }
 
-    // Fetch new OrderFilled events
     const filledLogs = await fusionContract.queryFilter("OrderFilled", lastBlock + 1, currentBlock);
     for (const log of filledLogs) {
         if (!isEventLog(log)) continue;
-
         const { orderHash, remainingAmount } = log.args;
-        console.log("🟢 OrderFilled:");
-        console.log("  orderHash:", orderHash);
-        console.log("  remainingAmount:", remainingAmount.toString());
-        console.log("  txHash:", log.transactionHash);
-
+        console.log("🟢 OrderFilled:", orderHash);
         await saveOrderFilled({
             orderHash,
             remainingAmount: remainingAmount.toString(),
             txHash: log.transactionHash,
             createdAt: Date.now()
         });
-
-        // Fetch new OrderVerified events
-        const verifiedLogs = await fusionContract.queryFilter("OrderVerified", lastBlock + 1, currentBlock);
-        for (const log of verifiedLogs) {
-            if (!isEventLog(log)) continue;
-            const {
-                suiAsset,
-                crossChainRecipient,
-                maker,
-                takerAsset,
-                makingAmount,
-                takingAmount,
-            } = log.args!;
-            console.log("🔵 OrderVerified:");
-            await createEscrow({
-                maker,
-                asset: takerAsset,
-                amount: makingAmount,
-                hashlock: ethers.keccak256("0x1234abcd"), // Or a real secret hash
-                timelock: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
-            });
-            console.log("  suiAsset:", suiAsset);
-            console.log("  crossChainRecipient:", crossChainRecipient);
-            console.log("  maker:", maker);
-            console.log("  takerAsset:", takerAsset);
-            console.log("  makingAmount:", makingAmount.toString());
-            console.log("  takingAmount:", takingAmount.toString());
-            console.log("  txHash:", log.transactionHash);
-
-            await saveOrderVerified({
-                suiAsset,
-                crossChainRecipient,
-                maker,
-                takerAsset,
-                makingAmount: makingAmount.toString(),
-                takingAmount: takingAmount.toString(),
-                txHash: log.transactionHash,
-                createdAt: Date.now()
-            });
-
-        }
-
-        lastBlock = currentBlock;
     }
 
-    // Poll every 10 seconds
-    setInterval(pollEvents, 10_000);
-    console.log("📡 Polling for events using HTTP...");
+    const verifiedLogs = await fusionContract.queryFilter("OrderVerified", lastBlock + 1, currentBlock);
+    for (const log of verifiedLogs) {
+        if (!isEventLog(log)) continue;
+        const {
+            suiAsset,
+            crossChainRecipient,
+            maker,
+            takerAsset,
+            makingAmount,
+            takingAmount,
+        } = log.args!;
+        console.log("🔵 OrderVerified:", maker);
+        await createEscrow({
+            maker,
+            asset: takerAsset,
+            amount: makingAmount,
+            hashlock: ethers.keccak256("0x1234abcd"),
+            timelock: Math.floor(Date.now() / 1000) + 3600,
+        });
+        await saveOrderVerified({
+            suiAsset,
+            crossChainRecipient,
+            maker,
+            takerAsset,
+            makingAmount: makingAmount.toString(),
+            takingAmount: takingAmount.toString(),
+            txHash: log.transactionHash,
+            createdAt: Date.now()
+        });
+    }
+
+    lastBlock = currentBlock;
 }
 
-pollEvents().catch(console.error);
+// ✅ Call once, then set interval
+pollEvents()
+    .then(() => {
+        console.log("📡 Polling for events using HTTP every 10s...");
+        setInterval(() => pollEvents().catch(console.error), 10_000);
+    })
+    .catch(console.error);
