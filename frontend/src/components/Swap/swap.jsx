@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useWallet } from '../../context/walletContext';
 import { useNavigate } from 'react-router-dom';
 import './swap.css';
 
@@ -11,6 +12,7 @@ const SwapPage = () => {
     const [error, setError] = useState('');
     const [isSwapping, setIsSwapping] = useState(false);
     const [swapStatus, setSwapStatus] = useState('');
+    const { walletAddress } = useWallet();
     const navigate = useNavigate();
 
     const handleSwap = async () => {
@@ -34,7 +36,8 @@ const SwapPage = () => {
                 `${import.meta.env.VITE_RELAYER_BACKEND_URL}/fusion/eth-to-strk`,
                 {
                     amount,
-                    srcToken: sourceChain  
+                    srcToken: sourceChain,
+                    walletAddress
                 }
             );
 
