@@ -45,6 +45,7 @@ import dutchAuctionRoute from './routes/fusion/strkToEthDutch.ts'; // adjust the
 import getCurrentRate from './routes/get-rate/getCurrentRate.ts';
 // import { pollOrderCreated } from "./services/listenDutchOrder.ts";
 import orderRoutes from "./routes/index.ts";
+import latestEventsRouter from "./escrow/frontendApi.ts"; // adjust the path if needed
 // websocket server for real-time updates
 import { createRateWebSocketServer } from "./ws/rateStreamer.ts"; // adjust the path if needed
 
@@ -60,6 +61,7 @@ async function main() {
 
     app.use(cors());
     app.use(express.json());
+    app.use('/', latestEventsRouter);
 
     // two main functions that will be called depending on which way the swap is initiated
 
