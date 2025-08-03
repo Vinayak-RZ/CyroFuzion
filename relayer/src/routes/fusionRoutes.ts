@@ -1,9 +1,10 @@
 // routes/fusionRoutes.ts
 import express from 'express';
-import { getDb } from '../db.ts'; // Import your DB connection
+import { getDb } from '../sqlite-db/db.ts'; // Import your DB connection
 
 const router = express.Router();
 
+// fetch all dutch orders for a specific wallet address
 router.get('/orders/:walletAddress', async (req, res) => {
     const walletAddress = req.params.walletAddress;
     const db = getDb();
