@@ -1,12 +1,12 @@
 import express from "express";
-import { submitDutchOrderToEthereum } from "../../services/submitDutchOrderToEthereum.ts";
+import { submitDutchOrder } from "../../services/submitDutchOrder.ts";
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
     try {
         const order = req.body;
-        const txHash = await submitDutchOrderToEthereum(order);
+        const txHash = await submitDutchOrder(order);
 
         res.status(200).json({ message: "Dutch order submitted", txHash });
     } catch (error: any) {
