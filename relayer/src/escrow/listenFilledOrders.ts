@@ -7,7 +7,7 @@ console.log("LAP_CONTRACT_ADDRESS:", process.env.LAP_CONTRACT_ADDRESS);
 
 import { Log, EventLog } from "ethers";
 import { createEscrow } from "./createEscrow.ts";
-import { initEscrowDb } from "../sqlite-db/db.ts";
+import { initEscrowDb, initDb } from "../sqlite-db/db.ts";
 
 import { saveOrderFilled, saveOrderVerified } from "../escrow/informFrontend.ts";
 
@@ -31,7 +31,8 @@ let initialized = false;
 
 async function pollEvents() {
     if (!initialized) {
-        await initEscrowDb();
+        await initDb();           // 🔹 Ensure DB is globally available
+        await initEscrowDb();     // 🔹 Can now safely use getDb()
         initialized = true;
     }
     const currentBlock = await provider.getBlockNumber();
@@ -106,3 +107,5 @@ async function pollEvents() {
     setInterval(pollEvents, 10_000);
     console.log("📡 Polling for events using HTTP...");
 }
+
+pollEvents().catch(console.error);
