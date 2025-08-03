@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import chartRoutes from './routes/chartRoutes.js';
+import pollingRoutes from './routes/pollingRoutes.js';
 import morgan from 'morgan';
 
 dotenv.config();
@@ -14,7 +15,8 @@ app.use(express.json());
 
 app.use(morgan('dev'));
 app.use('/auth', authRoutes);
-app.use('/api', chartRoutes);
+app.use('/chart', chartRoutes);
+app.use('/polling', pollingRoutes)
 app.get('/', (req, res) => {
   res.send('API is running');
 });

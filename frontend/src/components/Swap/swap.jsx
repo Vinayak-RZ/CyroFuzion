@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './swap.css';
 
@@ -12,7 +13,7 @@ const SwapPage = () => {
     const [swapStatus, setSwapStatus] = useState('');
     const navigate = useNavigate();
 
-    const handleSwap = () => {
+    const handleSwap = async () => {
         if (!amount || isNaN(amount) || Number(amount) <= 0) {
             setError('Please enter a valid amount.');
             return;
@@ -27,36 +28,61 @@ const SwapPage = () => {
         setIsSwapping(true);
         setSwapStatus('Initiating swap...');
 
-        // Simulate swap process with realistic timing
-        const timeouts = [
-            setTimeout(() => setSwapStatus('Sending request to relayer...'), 1000),
-            setTimeout(() => setSwapStatus('Processing on source chain...'), 3000),
-            setTimeout(() => setSwapStatus('Bridging tokens across chains...'), 5000),
-            setTimeout(() => setSwapStatus('Confirming on destination chain...'), 7000),
-            setTimeout(() => setSwapStatus('Finalizing transaction...'), 8500),
-            setTimeout(() => {
-                setSwapStatus('Swap completed successfully!');
-                // Auto-return to form after success
-                setTimeout(() => {
-                    setIsSwapping(false);
-                    setSwapStatus('');
-                    setAmount('');
-                    setMinAmount('');
-                }, 2000);
-            }, 10000)
-        ];
+        try {
+            // 1. Call Relayer Backend
+            const relayerResponse = await axios.post(
+                `${import.meta.env.VITE_RELAYER_BACKEND_URL}/fusion/eth-to-strk`,
+                {
+                    amount,
+                    srcToken: sourceChain  
+                }
+            );
 
-        // Store timeouts for cleanup if needed
-        window.swapTimeouts = timeouts;
+            const { orderId } = relayerResponse.data;
+
+            if (!orderId) {
+                throw new Error('Order ID not returned by relayer.');
+            }
+
+            console.log('Order created with ID:', orderId);
+
+            // 2. Call Express Backend to start polling
+            await axios.post(
+                `${import.meta.env.VITE_EXPRESS_BACKEND_URL}/polling/start`,
+                { orderId }
+            );
+
+            console.log('Polling started for orderId:', orderId);
+
+            // 3. Simulate UI progress updates (No manual timeouts; we’ll simulate based on backend success)
+            const timeouts = [
+                setTimeout(() => setSwapStatus('Processing on source chain...'), 1500),
+                setTimeout(() => setSwapStatus('Bridging tokens across chains...'), 3000),
+                setTimeout(() => setSwapStatus('Confirming on destination chain...'), 5000),
+                setTimeout(() => setSwapStatus('Finalizing transaction...'), 6500),
+                setTimeout(() => {
+                    setSwapStatus('Swap completed successfully!');
+                    // Navigate to chart after short delay
+                    setTimeout(() => {
+                        navigate('/chart');
+                    }, 1500);
+                }, 8000)
+            ];
+
+            window.swapTimeouts = timeouts;
+
+        } catch (err) {
+            console.error(err);
+            setError(err.response?.data?.error || err.message || 'Swap failed.');
+            setIsSwapping(false);
+        }
     };
 
     const handleCancel = () => {
-        // Clear any pending timeouts
         if (window.swapTimeouts) {
             window.swapTimeouts.forEach(timeout => clearTimeout(timeout));
             window.swapTimeouts = null;
         }
-        
         setIsSwapping(false);
         setSwapStatus('');
         setError('Swap cancelled by user.');
@@ -67,13 +93,13 @@ const SwapPage = () => {
             return (
                 <div className="chain-icon ethereum">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                        <circle cx="16" cy="16" r="16" fill="#627EEA"/>
-                        <path d="M16.498 4v8.87l7.497 3.35-7.497-12.22z" fill="#FFF" fillOpacity=".602"/>
-                        <path d="M16.498 4L9 16.22l7.498-3.35V4z" fill="#FFF"/>
-                        <path d="M16.498 21.968v6.027L24 17.616l-7.502 4.352z" fill="#FFF" fillOpacity=".602"/>
-                        <path d="M16.498 27.995v-6.028L9 17.616l7.498 10.38z" fill="#FFF"/>
-                        <path d="M16.498 20.573l7.497-4.353-7.497-3.348v7.701z" fill="#FFF" fillOpacity=".2"/>
-                        <path d="M9 16.22l7.498 4.353v-7.701L9 16.22z" fill="#FFF" fillOpacity=".602"/>
+                        <circle cx="16" cy="16" r="16" fill="#627EEA" />
+                        <path d="M16.498 4v8.87l7.497 3.35-7.497-12.22z" fill="#FFF" fillOpacity=".602" />
+                        <path d="M16.498 4L9 16.22l7.498-3.35V4z" fill="#FFF" />
+                        <path d="M16.498 21.968v6.027L24 17.616l-7.502 4.352z" fill="#FFF" fillOpacity=".602" />
+                        <path d="M16.498 27.995v-6.028L9 17.616l7.498 10.38z" fill="#FFF" />
+                        <path d="M16.498 20.573l7.497-4.353-7.497-3.348v7.701z" fill="#FFF" fillOpacity=".2" />
+                        <path d="M9 16.22l7.498 4.353v-7.701L9 16.22z" fill="#FFF" fillOpacity=".602" />
                     </svg>
                 </div>
             );
@@ -81,9 +107,9 @@ const SwapPage = () => {
             return (
                 <div className="chain-icon starknet">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                        <circle cx="16" cy="16" r="16" fill="#0C0C4F"/>
-                        <path d="M8 24L16 8L24 24H8Z" fill="#FFF"/>
-                        <path d="M12 20L16 12L20 20H12Z" fill="#0C0C4F"/>
+                        <circle cx="16" cy="16" r="16" fill="#0C0C4F" />
+                        <path d="M8 24L16 8L24 24H8Z" fill="#FFF" />
+                        <path d="M12 20L16 12L20 20H12Z" fill="#0C0C4F" />
                     </svg>
                 </div>
             );
@@ -94,21 +120,19 @@ const SwapPage = () => {
         return chain.charAt(0).toUpperCase() + chain.slice(1);
     };
 
-    const getProcessingIcon = () => {
-        return (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#4F46E5" strokeWidth="2"/>
-                <path d="M12 6v6l4 2" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-        );
-    };
+    const getProcessingIcon = () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="#4F46E5" strokeWidth="2" />
+            <path d="M12 6v6l4 2" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+    );
 
-    // Processing UI
+    // Swapping UI Animation
     if (isSwapping) {
         return (
             <div className="swap-container">
                 <h2 className="swap-title">CryoFuzion</h2>
-                
+
                 <div className="processing-container">
                     <div className="chain-card source-card">
                         {getChainIcon(sourceChain)}
@@ -142,7 +166,7 @@ const SwapPage = () => {
         );
     }
 
-    // Main swap form UI
+    // Main Swap Form UI
     return (
         <div className="swap-container">
             <h2 className="swap-title">CryoFuzion</h2>
@@ -192,7 +216,7 @@ const SwapPage = () => {
 
                 {error && <p className="error-message">{error}</p>}
 
-                <button className="swap-button" onClick={handleSwap}>
+                <button className="swap-button" onClick={handleSwap} disabled={isSwapping}>
                     Initiate Cross-Chain Swap
                 </button>
             </div>
