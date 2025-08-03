@@ -1,4 +1,4 @@
-# Cyrofuzion: Cross-Chain Atomic Swaps via Dutch Auction Protocol
+# Cyrofuzion: Cross-Chain Atomic Swaps via 1Inch Fusion+ Protocol
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/7f79f7b4-abb8-49fa-9a61-3f39413dc8b2" alt="CyroFuzion" width="100">
@@ -809,3 +809,4 @@ Built for the 1inch Fusion+ Hackathon. Special thanks to the 1inch team for the 
 ---
 
 *This documentation represents the current state of the Cyrofuzion protocol. For the latest updates and technical details, please refer to the project repository and official documentation.*
+
