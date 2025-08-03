@@ -1,5 +1,6 @@
 // controllers/orderController.ts
 import { Request, Response } from "express";
+import { computeAuctionOrderId } from "../../utils/getAuctionOrderId.ts";
 import { storeBaseOrderInfo, storeDutchAuctionParams } from "../../sqlite-db/orderStore.ts";
 import { randomBytes } from "crypto";
 import { keccak256, concat } from "ethers";
@@ -46,11 +47,21 @@ export async function handleEthToStrkOrder(req: Request, res: Response) {
     // Store the order in the database (1st)
     await storeBaseOrderInfo(order);
 
+    // Compute the auctionOrderId
+    const auctionOrderId = await computeAuctionOrderId({
+        srcToken: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        amount: ethAmount,
+        auctionStart: auctionStart,
+        startrate: BigInt(Math.floor(parseFloat(startRate) * 1e18)),
+        minReturnAmount: BigInt(Math.floor(parseFloat(minReturnAmount) * 1e18)),
+        decrease_rates: decreaseRates.map((r) =>
+            BigInt(Math.floor(parseFloat(r) * 1e8))
+        ),
+    });
 
-    // Create the auction parameters object
     const auctionParams = {
         orderId: orderId,
-        auctionOrderId: "",
+        auctionOrderId: auctionOrderId,
         amount: ethAmount,
         startRate: startRate,
         minReturnAmount: minReturnAmount,
@@ -63,6 +74,7 @@ export async function handleEthToStrkOrder(req: Request, res: Response) {
 
     const payload = {
         orderId: order.orderId,
+        auctionOrderId: auctionParams.auctionOrderId,
         srcToken: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         amount: auctionParams.amount,
         auctionStart: order.auctionStart,

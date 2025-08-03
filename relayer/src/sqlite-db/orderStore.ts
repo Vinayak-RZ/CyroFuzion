@@ -18,6 +18,7 @@ export type OrderInfo = {
 
 export type DutchAuctionParams = {
   orderId: string;
+  auctionOrderId: string;
   startRate: string;
   amount: string;
   minReturnAmount: string;
@@ -67,11 +68,12 @@ export async function storeDutchAuctionParams(
   await db.run(
     `
     INSERT OR REPLACE INTO dutch_auctions (
-      orderId, amount, startRate, minReturnAmount, decreaseRates
-    ) VALUES (?, ?, ?, ?, ?)
+      orderId, auctionOrderId, amount, startRate, minReturnAmount, decreaseRates
+    ) VALUES (?, ?, ?, ?, ?, ?)
     `,
     [
       auction.orderId,
+      auction.auctionOrderId,
       auction.amount,
       auction.startRate,
       auction.minReturnAmount,
@@ -113,4 +115,23 @@ export async function updateOrderFilled(orderId: string) {
   }
 
   console.log(`✅ Order ${orderId} marked as filled`);
+}
+
+export async function updateAuctionOrderId(orderId: string, auctionOrderId: string) {
+  const db = getDb();
+
+  const result = await db.run(
+    `
+    UPDATE dutch_auctions
+    SET auctionOrderId = ?
+    WHERE orderId = ?
+    `,
+    [auctionOrderId, orderId]
+  );
+
+  if (result.changes === 0) {
+    throw new Error(`Order ${orderId} not found to update auctionOrderId`);
+  }
+
+  console.log(`🔗 Stored auctionOrderId ${auctionOrderId} for orderId ${orderId}`);
 }
