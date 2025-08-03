@@ -85,6 +85,7 @@ mod EscrowInstance {
 
             assert(!self.is_completed.read(), 'Already completed');
             assert(self.funds_locked.read(), 'Funds not locked');
+            //assert(self.maker.read(), 'Only maker can redeem.');
             assert(caller == self.resolver.read(), 'Only resolver can redeem');
             assert(current_time >= self.timelock_b.read(), 'Timelock B not reached');
 
@@ -96,8 +97,8 @@ mod EscrowInstance {
 
             let token_dispatcher = IERC20Dispatcher { contract_address: self.token_address.read() };
             let amount = self.amount.read();
-            
-            let success = token_dispatcher.transfer(caller, amount);
+            let maker = self.maker.read();
+            let success = token_dispatcher.transfer(maker, amount);
             assert(success, 'Transfer failed');
 
             self.is_completed.write(true);
