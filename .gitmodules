@@ -1,0 +1,3 @@
+[submodule "dutch-auction/lib/forge-std"]
+	path = dutch-auction/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
