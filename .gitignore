@@ -1,3 +1,11 @@
+<<<<<<< HEAD
 *node_modules*
 *.env*
 *my-test*
+=======
+*node_modules*
+*.env*
+*my-test*
+relayer/src/test.ts
+relayer-cardano
+>>>>>>> main
