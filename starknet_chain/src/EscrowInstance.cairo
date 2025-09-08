@@ -72,10 +72,8 @@ mod EscrowInstance {
             let token_dispatcher = IERC20Dispatcher { contract_address: self.token_address.read() };
             let contract_address = get_contract_address();
             let amount = self.amount.read();
-            
             let success = token_dispatcher.transfer(contract_address, amount);
             assert(success, 'Transfer failed');
-
             self.funds_locked.write(true);
         }
 
