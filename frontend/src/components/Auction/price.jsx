@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
+import axios from 'axios';
 import './price.css';
 
 const AuctionPage = ({ auctionId = "12345" }) => {
@@ -8,15 +9,25 @@ const AuctionPage = ({ auctionId = "12345" }) => {
     const [loading, setLoading] = useState(true);
     const [chartData, setChartData] = useState(null);
 
+    const mockData = [
+        { timestamp: new Date('2025-08-01T10:00:00'), price: 1.2 },
+        { timestamp: new Date('2025-08-01T10:05:00'), price: 1.5 },
+        { timestamp: new Date('2025-08-01T10:10:00'), price: 1.3 },
+        { timestamp: new Date('2025-08-01T10:15:00'), price: 1.6 },
+        { timestamp: new Date('2025-08-01T10:20:00'), price: 1.8 },
+        { timestamp: new Date('2025-08-01T10:25:00'), price: 1.4 },
+        { timestamp: new Date('2025-08-01T10:30:00'), price: 2.1 },
+        { timestamp: new Date('2025-08-01T10:35:00'), price: 2.3 },
+    ];
+
     useEffect(() => {
         document.body.style.margin = '0';
         document.body.style.padding = '0';
         document.body.style.background = 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)';
         document.documentElement.style.margin = '0';
         document.documentElement.style.padding = '0';
-        
+
         return () => {
-            // Cleanup styles when component unmounts
             document.body.style.margin = '';
             document.body.style.padding = '';
             document.body.style.background = '';
@@ -28,24 +39,28 @@ const AuctionPage = ({ auctionId = "12345" }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Replace with actual API call
-                const data = [
-                    { timestamp: new Date('2025-08-01T10:00:00'), price: 1.2 },
-                    { timestamp: new Date('2025-08-01T10:05:00'), price: 1.5 },
-                    { timestamp: new Date('2025-08-01T10:10:00'), price: 1.3 },
-                    { timestamp: new Date('2025-08-01T10:15:00'), price: 1.6 },
-                    { timestamp: new Date('2025-08-01T10:20:00'), price: 1.8 },
-                    { timestamp: new Date('2025-08-01T10:25:00'), price: 1.4 },
-                    { timestamp: new Date('2025-08-01T10:30:00'), price: 2.1 },
-                    { timestamp: new Date('2025-08-01T10:35:00'), price: 2.3 },
-                ];
-                setChartData(data);
-                setLoading(false);
+                const response = await axios.get(`${import.meta.env.VITE_EXPRESS_BACKEND_URL}/chart/prices/${auctionId}`);
+                const data = response.data;
+
+                if (Array.isArray(data) && data.length > 0) {
+                    const parsedData = data.map(d => ({
+                        timestamp: new Date(d.timestamp),
+                        price: Number(d.price)
+                    }));
+                    setChartData(parsedData);
+                } else {
+                    console.warn("Received empty or invalid data. Using mock data.");
+                    setChartData(mockData);
+                }
+
             } catch (err) {
-                setError('Failed to load chart data.');
+                console.error("Failed to fetch chart data, using mock data.", err);
+                setChartData(mockData);
+            } finally {
                 setLoading(false);
             }
         };
+
         if (auctionId) fetchData();
     }, [auctionId]);
 
@@ -55,7 +70,7 @@ const AuctionPage = ({ auctionId = "12345" }) => {
 
     const drawChart = (data) => {
         d3.select(chartRef.current).selectAll('*').remove();
-        
+
         const margin = { top: 60, right: 60, bottom: 60, left: 80 };
         const width = 800 - margin.left - margin.right;
         const height = 400 - margin.top - margin.bottom;
@@ -66,7 +81,7 @@ const AuctionPage = ({ auctionId = "12345" }) => {
             .attr('height', height + margin.top + margin.bottom);
 
         const defs = svg.append('defs');
-        
+
         const lineGradient = defs.append('linearGradient').attr('id', 'lineGrad');
         lineGradient.append('stop').attr('offset', '0%').attr('stop-color', '#4f46e5');
         lineGradient.append('stop').attr('offset', '100%').attr('stop-color', '#a78bfa');
@@ -106,9 +121,9 @@ const AuctionPage = ({ auctionId = "12345" }) => {
 
         circles.transition().delay((d, i) => i * 150 + 800).duration(200).attr('r', 4);
 
-        circles.on('mouseover', function(event, d) {
+        circles.on('mouseover', function (event, d) {
             d3.select(this).transition().duration(150).attr('r', 7);
-            
+
             const tooltip = g.append('g').attr('class', 'auction-tooltip')
                 .attr('transform', `translate(${x(d.timestamp)},${y(d.price)})`);
             tooltip.append('rect').attr('x', -35).attr('y', -35).attr('width', 70).attr('height', 25).attr('rx', 6);
@@ -116,7 +131,7 @@ const AuctionPage = ({ auctionId = "12345" }) => {
                 .text(d3.timeFormat('%H:%M')(d.timestamp));
             tooltip.append('text').attr('class', 'tooltip-price').attr('y', -15)
                 .text(`$${d.price.toFixed(2)}`);
-        }).on('mouseout', function() {
+        }).on('mouseout', function () {
             d3.select(this).transition().duration(150).attr('r', 4);
             g.selectAll('.auction-tooltip').remove();
         });
@@ -151,7 +166,7 @@ const AuctionPage = ({ auctionId = "12345" }) => {
             </div>
         );
     }
-    
+
     if (error) {
         return (
             <div className="auction-container">
