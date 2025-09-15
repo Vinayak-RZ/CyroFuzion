@@ -1,7 +1,12 @@
 import { ethers } from 'ethers';
 import dotenv from 'dotenv';
-import contractABI from '../abi/Contract.json' assert { type: 'json' }; 
 
+import fs from 'fs';
+import path from 'path';
+
+const abiPath = path.resolve('../server/abi/Contract.json');
+const abiJSON = JSON.parse(fs.readFileSync(abiPath, 'utf8'));
+const contractABI = abiJSON.abi;
 dotenv.config();
 
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL); 
