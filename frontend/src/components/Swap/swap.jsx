@@ -6,8 +6,10 @@ const SwapPage = () => {
     const [sourceChain, setSourceChain] = useState('ethereum');
     const [destinationChain, setDestinationChain] = useState('starknet');
     const [amount, setAmount] = useState('');
-    const [minAmount, setminAmount] = useState('');
+    const [minAmount, setMinAmount] = useState('');
     const [error, setError] = useState('');
+    const [isSwapping, setIsSwapping] = useState(false);
+    const [swapStatus, setSwapStatus] = useState('');
     const navigate = useNavigate();
 
     const handleSwap = () => {
@@ -22,11 +24,125 @@ const SwapPage = () => {
         }
 
         setError('');
+        setIsSwapping(true);
+        setSwapStatus('Initiating swap...');
 
-        alert(`Swapping ${amount} from ${sourceChain} to ${destinationChain}`);
+        // Simulate swap process with realistic timing
+        const timeouts = [
+            setTimeout(() => setSwapStatus('Sending request to relayer...'), 1000),
+            setTimeout(() => setSwapStatus('Processing on source chain...'), 3000),
+            setTimeout(() => setSwapStatus('Bridging tokens across chains...'), 5000),
+            setTimeout(() => setSwapStatus('Confirming on destination chain...'), 7000),
+            setTimeout(() => setSwapStatus('Finalizing transaction...'), 8500),
+            setTimeout(() => {
+                setSwapStatus('Swap completed successfully!');
+                // Auto-return to form after success
+                setTimeout(() => {
+                    setIsSwapping(false);
+                    setSwapStatus('');
+                    setAmount('');
+                    setMinAmount('');
+                }, 2000);
+            }, 10000)
+        ];
 
+        // Store timeouts for cleanup if needed
+        window.swapTimeouts = timeouts;
     };
 
+    const handleCancel = () => {
+        // Clear any pending timeouts
+        if (window.swapTimeouts) {
+            window.swapTimeouts.forEach(timeout => clearTimeout(timeout));
+            window.swapTimeouts = null;
+        }
+        
+        setIsSwapping(false);
+        setSwapStatus('');
+        setError('Swap cancelled by user.');
+    };
+
+    const getChainIcon = (chain) => {
+        if (chain === 'ethereum') {
+            return (
+                <div className="chain-icon ethereum">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="16" r="16" fill="#627EEA"/>
+                        <path d="M16.498 4v8.87l7.497 3.35-7.497-12.22z" fill="#FFF" fillOpacity=".602"/>
+                        <path d="M16.498 4L9 16.22l7.498-3.35V4z" fill="#FFF"/>
+                        <path d="M16.498 21.968v6.027L24 17.616l-7.502 4.352z" fill="#FFF" fillOpacity=".602"/>
+                        <path d="M16.498 27.995v-6.028L9 17.616l7.498 10.38z" fill="#FFF"/>
+                        <path d="M16.498 20.573l7.497-4.353-7.497-3.348v7.701z" fill="#FFF" fillOpacity=".2"/>
+                        <path d="M9 16.22l7.498 4.353v-7.701L9 16.22z" fill="#FFF" fillOpacity=".602"/>
+                    </svg>
+                </div>
+            );
+        } else {
+            return (
+                <div className="chain-icon starknet">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="16" r="16" fill="#0C0C4F"/>
+                        <path d="M8 24L16 8L24 24H8Z" fill="#FFF"/>
+                        <path d="M12 20L16 12L20 20H12Z" fill="#0C0C4F"/>
+                    </svg>
+                </div>
+            );
+        }
+    };
+
+    const getChainName = (chain) => {
+        return chain.charAt(0).toUpperCase() + chain.slice(1);
+    };
+
+    const getProcessingIcon = () => {
+        return (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#4F46E5" strokeWidth="2"/>
+                <path d="M12 6v6l4 2" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+        );
+    };
+
+    // Processing UI
+    if (isSwapping) {
+        return (
+            <div className="swap-container">
+                <h2 className="swap-title">CryoFuzion</h2>
+                
+                <div className="processing-container">
+                    <div className="chain-card source-card">
+                        {getChainIcon(sourceChain)}
+                        <h3>{getChainName(sourceChain)}</h3>
+                        <div className="amount-display">-{amount} ETH</div>
+                        <div className="status-indicator sending">Sending</div>
+                    </div>
+
+                    <div className="processing-bridge">
+                        <div className="bridge-line">
+                            <div className="bridge-progress"></div>
+                        </div>
+                        <div className="processing-icon">
+                            {getProcessingIcon()}
+                        </div>
+                        <div className="status-text">{swapStatus}</div>
+                    </div>
+
+                    <div className="chain-card destination-card">
+                        {getChainIcon(destinationChain)}
+                        <h3>{getChainName(destinationChain)}</h3>
+                        <div className="amount-display">+{amount} ETH</div>
+                        <div className="status-indicator receiving">Receiving</div>
+                    </div>
+                </div>
+
+                <button className="cancel-button" onClick={handleCancel}>
+                    Cancel Swap
+                </button>
+            </div>
+        );
+    }
+
+    // Main swap form UI
     return (
         <div className="swap-container">
             <h2 className="swap-title">CryoFuzion</h2>
@@ -59,8 +175,8 @@ const SwapPage = () => {
                     <input
                         type="number"
                         value={minAmount}
-                        onChange={(e) => setminAmount(e.target.value)}
-                        placeholder="Enter amount"
+                        onChange={(e) => setMinAmount(e.target.value)}
+                        placeholder="Enter minimum amount"
                     />
                 </div>
 
@@ -77,7 +193,7 @@ const SwapPage = () => {
                 {error && <p className="error-message">{error}</p>}
 
                 <button className="swap-button" onClick={handleSwap}>
-                    Swap
+                    Initiate Cross-Chain Swap
                 </button>
             </div>
 
