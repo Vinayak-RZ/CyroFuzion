@@ -96,20 +96,29 @@ body, html {
   animation: fadeIn 0.3s ease-out;
 }
 
-.connect-button {
+/* Base button styles */
+.connect-button,
+.sync-button,
+.disconnect-button,
+.swap-button {
   width: 100%;
   padding: 16px 20px;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   border: none;
   border-radius: 12px;
-  color: #ffffff;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  margin-top: 8px;
+  margin-top: 12px;
+  display: block;
+}
+
+/* Connect button - Primary purple gradient */
+.connect-button {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
 }
 
 .connect-button:hover {
@@ -120,7 +129,62 @@ body, html {
   background: linear-gradient(135deg, #5b52e8 0%, #8b4cf0 100%);
 }
 
-.connect-button:active {
+/* Sync button - Blue gradient */
+.sync-button {
+  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+  color: #ffffff;
+}
+
+.sync-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 25px rgba(14, 165, 233, 0.4),
+    0 0 20px rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+}
+
+/* Disconnect button - Red gradient */
+.disconnect-button {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+}
+
+.disconnect-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 25px rgba(239, 68, 68, 0.4),
+    0 0 20px rgba(220, 38, 38, 0.3);
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+/* Swap button - Green gradient */
+.swap-button {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #ffffff;
+}
+
+.swap-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 25px rgba(34, 197, 94, 0.4),
+    0 0 20px rgba(22, 163, 74, 0.3);
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+/* Disabled state for swap button */
+.swap-button:disabled {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Active states for all buttons */
+.connect-button:active,
+.sync-button:active,
+.disconnect-button:active,
+.swap-button:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: 
     0 4px 15px rgba(79, 70, 229, 0.3),
@@ -175,9 +239,13 @@ body, html {
     font-size: 24px;
   }
   
-  .connect-button {
+  .connect-button,
+  .sync-button,
+  .disconnect-button,
+  .swap-button {
     padding: 14px 18px;
     font-size: 15px;
+    margin-top: 10px;
   }
 }
 

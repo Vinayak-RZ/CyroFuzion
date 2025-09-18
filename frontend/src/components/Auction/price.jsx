@@ -8,7 +8,6 @@ const AuctionPage = ({ auctionId = "12345" }) => {
     const [loading, setLoading] = useState(true);
     const [chartData, setChartData] = useState(null);
 
-    // Add global styles to ensure full coverage
     useEffect(() => {
         document.body.style.margin = '0';
         document.body.style.padding = '0';
@@ -68,7 +67,6 @@ const AuctionPage = ({ auctionId = "12345" }) => {
 
         const defs = svg.append('defs');
         
-        // Gradients
         const lineGradient = defs.append('linearGradient').attr('id', 'lineGrad');
         lineGradient.append('stop').attr('offset', '0%').attr('stop-color', '#4f46e5');
         lineGradient.append('stop').attr('offset', '100%').attr('stop-color', '#a78bfa');
@@ -83,38 +81,31 @@ const AuctionPage = ({ auctionId = "12345" }) => {
 
         const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-        // Scales
         const x = d3.scaleTime().domain(d3.extent(data, d => d.timestamp)).range([0, width]);
         const y = d3.scaleLinear().domain([d3.min(data, d => d.price) * 0.9, d3.max(data, d => d.price) * 1.1]).range([height, 0]);
 
-        // Grid
         g.append('g').attr('class', 'grid')
             .call(d3.axisLeft(y).tickSize(-width).tickFormat('').ticks(5));
         g.append('g').attr('class', 'grid').attr('transform', `translate(0,${height})`)
             .call(d3.axisBottom(x).tickSize(-height).tickFormat('').ticks(6));
 
-        // Area
         const area = d3.area().x(d => x(d.timestamp)).y0(height).y1(d => y(d.price)).curve(d3.curveCatmullRom);
         g.append('path').datum(data).attr('class', 'price-area')
             .attr('fill', 'url(#areaGrad)').attr('d', area);
 
-        // Line
         const line = d3.line().x(d => x(d.timestamp)).y(d => y(d.price)).curve(d3.curveCatmullRom);
         const path = g.append('path').datum(data).attr('class', 'price-line')
             .attr('stroke', 'url(#lineGrad)').attr('d', line);
 
-        // Animate line
         const totalLength = path.node().getTotalLength();
         path.attr('stroke-dasharray', totalLength).attr('stroke-dashoffset', totalLength)
             .transition().duration(1500).attr('stroke-dashoffset', 0);
 
-        // Points
         const circles = g.selectAll('circle').data(data).enter().append('circle').attr('class', 'data-point')
             .attr('cx', d => x(d.timestamp)).attr('cy', d => y(d.price)).attr('r', 0);
 
         circles.transition().delay((d, i) => i * 150 + 800).duration(200).attr('r', 4);
 
-        // Hover effects
         circles.on('mouseover', function(event, d) {
             d3.select(this).transition().duration(150).attr('r', 7);
             
@@ -130,18 +121,16 @@ const AuctionPage = ({ auctionId = "12345" }) => {
             g.selectAll('.auction-tooltip').remove();
         });
 
-        // Axes
+
         g.append('g').attr('class', 'axis').attr('transform', `translate(0,${height})`)
             .call(d3.axisBottom(x).ticks(6).tickFormat(d3.timeFormat('%H:%M')));
         g.append('g').attr('class', 'axis')
             .call(d3.axisLeft(y).ticks(5).tickFormat(d => `$${d.toFixed(2)}`));
 
-        // Title
         svg.append('text').attr('class', 'auction-title')
             .attr('x', (width + margin.left + margin.right) / 2).attr('y', 30)
             .text(`Auction #${auctionId} Price Trend`);
 
-        // Current price indicator
         const currentPrice = data[data.length - 1].price;
         const indicator = svg.append('g').attr('class', 'current-price-indicator')
             .attr('transform', `translate(${width + margin.left - 100}, 50)`);
