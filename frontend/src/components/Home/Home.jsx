@@ -19,13 +19,15 @@ const Home = () => {
 
     const handleConnectWallet = async () => {
         try {
-            await connectWallet();
+        
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-            const address = window.ethereum?.selectedAddress;
-            if (!address) {
-                setError('Failed to connect wallet.');
+            if (!accounts || accounts.length === 0) {
+                setError('No wallet selected or MetaMask denied connection.');
                 return;
             }
+
+            const address = accounts[0];
 
             if (hasConnectedToBackend) {
                 setError('Wallet already synced with backend.');
@@ -35,7 +37,7 @@ const Home = () => {
             const token = localStorage.getItem('token');
             const response = await axios.post(
                 `${import.meta.env.VITE_API_BASE_URL}/auth/connect-wallet`,
-                { walletAddress: address }, // use directly here
+                { walletAddress: address },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -50,6 +52,7 @@ const Home = () => {
             setError(err.response?.data?.error || err.message || 'Something went wrong');
         }
     };
+
 
 
     return (
