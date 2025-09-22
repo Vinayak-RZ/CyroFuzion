@@ -2,18 +2,16 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
-
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);      
+  const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
@@ -21,16 +19,23 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
-    const response = await axios.post('http://localhost:5000/auth/login', {
+  const requestOtp = async (email, password) => {
+    const res = await axios.post('http://localhost:5000/auth/login/send-otp', {
       email,
       password,
     });
+    return res.data.message; // e.g., "OTP sent to email"
+  };
 
-    const { token, user } = response.data;
+  const verifyOtp = async (email, otp) => {
+    const res = await axios.post('http://localhost:5000/auth/login/verify-otp', {
+      email,
+      otp,
+    });
+
+    const { token, user } = res.data;
     setToken(token);
     setUser(user);
-
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
   };
@@ -43,7 +48,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, loading, requestOtp, verifyOtp, logout }}>
       {children}
     </AuthContext.Provider>
   );
