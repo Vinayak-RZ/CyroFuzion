@@ -1,54 +1,49 @@
-import { ethers } from 'ethers';
-import { SqliteDB } from './db'; // your SQLite setup
-// import { FusionDutchAuction__factory } from './types'; // if using typechain
+// utils/computeAuctionOrderId.ts
+import { ethers } from "ethers";
+import * as dotenv from "dotenv";
+import FusionDutchAuction from "../abi/FusionDutchAuction.json" with { type: "json" };
 
-const provider = new ethers.JsonRpcProvider(process.env.ETH_RPC_URL);
-const signer = new ethers.Wallet(process.env.RELAYER_PK!, provider);
+dotenv.config();
 
-const auction = new ethers.Contract(
-    process.env.ETH_AUCTION_CONTRACT_ADDRESS!,
-    [
-        "event OrderCreated(bytes32 indexed orderId, address indexed user, address indexed srcToken, uint256 amount, uint256 auctionStart, uint256 startrate, uint256 minReturnAmount, uint256[] decrease_rates)",
-        "function createOrder(address,uint256,uint256,uint256,uint256,uint256[])"
-    ],
-    signer
-);
+const ETH_AUCTION_CONTRACT_ADDRESS = process.env.ETH_AUCTION_CONTRACT_ADDRESS!;
+if (!ETH_AUCTION_CONTRACT_ADDRESS) {
+    throw new Error("Missing ETH_AUCTION_CONTRACT_ADDRESS in .env");
+}
 
-// args from your backend
-const tx = await auction.createOrder(
+export async function computeAuctionOrderId({
     srcToken,
     amount,
     auctionStart,
     startrate,
     minReturnAmount,
-    decreaseRates
-);
+    decrease_rates,
+}: {
+    srcToken: string;
+    amount: bigint;
+    auctionStart: number;
+    startrate: bigint;
+    minReturnAmount: bigint;
+    decrease_rates: bigint[];
+}): Promise<string> {
+    const provider = new ethers.JsonRpcProvider(process.env.ETH_RPC_URL!);
+    const wallet = new ethers.Wallet(process.env.ETH_PRIVATE_KEY!, provider);
 
-console.log("📤 Transaction sent:", tx.hash);
+    const contract = new ethers.Contract(
+        process.env.ETH_AUCTION_CONTRACT_ADDRESS!,
+        FusionDutchAuction,
+        wallet
+    );
 
-const receipt = await tx.wait();
-console.log("📬 Mined in block:", receipt.blockNumber);
+    // ✅ Correct callStatic usage in Ethers v6
+    const createOrderFn = contract.getFunction("createOrder");
+    const orderId = await createOrderFn.staticCall(
+        srcToken,
+        amount,
+        auctionStart,
+        startrate,
+        minReturnAmount,
+        decrease_rates
+    );
 
-// Extract OrderCreated event
-const event = receipt.logs
-    .map(log => {
-        try {
-            return auction.interface.parseLog(log);
-        } catch (err) {
-            return null;
-        }
-    })
-    .find(log => log && log.name === "OrderCreated");
-
-if (!event) {
-    throw new Error("OrderCreated event not found");
+    return orderId; // Should be a bytes32 string
 }
-
-const auctionOrderId = event.args.orderId;
-console.log("🆔 Order ID:", auctionOrderId);
-
-// Save to SQLite
-await db.insertOrder({
-    ...yourExistingFields,
-    auctionOrderId: auctionOrderId
-});

@@ -38,6 +38,7 @@ export async function initDb() {
   await db.exec(`
   CREATE TABLE IF NOT EXISTS dutch_auctions (
     orderId TEXT PRIMARY KEY,
+    auctionOrderId TEXT,
     amount TEXT,
     startRate TEXT,
     minReturnAmount TEXT,
@@ -50,6 +51,9 @@ export async function initDb() {
 }
 
 export function getDb() {
+  if (!db) {
+    throw new Error('❌ Database not initialized. Call initDb() first.');
+  }
   return db;
 }
 
