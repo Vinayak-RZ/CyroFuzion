@@ -2,8 +2,9 @@
   "name": "relayer",
   "type": "module",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/index.ts",
   "scripts": {
+    "dev": "node --loader ts-node/esm src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -11,15 +12,15 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@1inch/cross-chain-sdk": "^0.1.15-rc.0", 
+    "@1inch/cross-chain-sdk": "^0.1.15-rc.0",
     "dotenv": "^17.2.1",
     "lucid-cardano": "^0.10.11",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
     "web3": "^4.16.0",
     "web3-providers-http": "^4.2.0"
   },
   "devDependencies": {
-    "@types/node": "^24.1.0"
+    "@types/node": "^24.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
   }
 }
