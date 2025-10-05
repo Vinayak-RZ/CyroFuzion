@@ -1,0 +1,16 @@
+[package]
+name = "contracts"
+version = "1.0.0"
+authors = []
+
+[addresses]
+my_module = "0x493e472a2b2f08dc4c1405eb90537fdcd8e05df932fa9f59599255dc3d4a85d9"
+escrow = "0x123"
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-framework.git"
+rev = "mainnet"
+subdir = "aptos-framework"
+
+[dev-dependencies]
