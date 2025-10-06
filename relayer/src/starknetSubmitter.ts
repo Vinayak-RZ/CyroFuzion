@@ -27,7 +27,7 @@ export async function submitOrderToStarknet(order: FusionOrder): Promise<string>
 
     // Load escrow contract
     const contractAddress = process.env.ESCROW_CONTRACT_ADDRESS!;
-    const abi = (await import("./abi/FusionEscrow.json")).default; // Cairo 1 contract ABI
+    const abi = (await import("./abi/FusionDutchAuction.json")).default; // Cairo 1 contract ABI
     const contract = new Contract(abi, contractAddress, account);
 
     // Prepare calldata
