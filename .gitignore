@@ -1,2 +1,4 @@
 *node_modules*
 *.env*
+*my-test*
+relayer/src/test.ts
